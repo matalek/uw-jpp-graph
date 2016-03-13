@@ -13,7 +13,7 @@ smain input =
     parse g (v:neighbours) =
       (read v :: Int ,listToInts neighbours):g
     neighboursLists = foldl parseLine [] ls
-    vertices = [x | (x,y) <- neighboursLists]
+    vertices = [x | (x,_) <- neighboursLists]
     beg = minimum vertices
     end = maximum vertices
     graph = (array (beg, end) neighboursLists) :: Graph
