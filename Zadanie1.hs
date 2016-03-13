@@ -9,6 +9,7 @@ smain input =
     ls = lines input
     parseLine g l = parse g $ words l
     listToInts = map (\ el -> read el :: Int)
+    parse g [] = g
     parse g (v:neighbours) =
       (read v :: Int ,listToInts neighbours):g
     neighboursLists = foldl parseLine [] ls
