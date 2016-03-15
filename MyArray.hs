@@ -37,8 +37,10 @@ instance (Ix a, Ix b) => Ix (a, b) where
     [(x, y) | x <- (range (begA, endA)), y <- (range (begB, endB))]
 
   rangeSize ((begA, begB), (endA, endB)) =
-    (rangeSize (begA, endA)) * (rangeSize (begB, endB))
-                                                      
+    rangeSize (begA, endA) * rangeSize (begB, endB)
+
+-- Array type
+
 data Array i e = Leaf (Maybe e) | Node (i, i) i (Array i e) (Array i e) deriving (Show)
 
 array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
@@ -64,9 +66,11 @@ listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
 
 (!) :: (Ix i) => Array i e -> i -> e
 (!) (Leaf (Just e)) _ = e
-(!) (Node _ mid left right) i
-  | i <= mid = (!) left i
-  | otherwise = (!) right i
+(!) (Leaf Nothing) _ = error "No value assigned"
+(!) (Node (beg, end) mid left right) ind
+  | not $ inRange (beg, end) ind = error "Index out of range"
+  | ind <= mid = (!) left ind
+  | otherwise = (!) right ind
 
 elems :: Ix i => Array i e -> [e]
 elems arr = elemsAux arr []
@@ -81,11 +85,12 @@ elemsAux (Node _ _ left right) acc =
 
 update :: Ix i => i -> e -> Array i e -> Array i e
 update _ el (Leaf _) = Leaf (Just el)
-update ind el (Node (beg, end) mid left right) =
-  Node (beg, end) mid newLeft newRight
+update ind el n@(Node (beg, end) mid left right)
+  | not $ inRange (beg, end) ind = n
+  | otherwise = Node (beg, end) mid newLeft newRight
   where
     newLeft = if ind <= mid then update ind el left else left
     newRight = if ind > mid then update ind el right else right
 
 (//) :: (Ix i) => Array i e -> [(i, e)] -> Array i e
-(//) arr l = foldl (\ acc (ind, el) -> update ind el acc) arr l
+(//) = foldl (\ acc (ind, el) -> update ind el acc)
