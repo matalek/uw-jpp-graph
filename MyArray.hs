@@ -1,4 +1,4 @@
-module MyArray where
+module MyArray(Ix (..), array, listArray, update, (//), (!), elems) where
 
 class Ord a => Ix a where
   range :: (a, a) -> [a]
