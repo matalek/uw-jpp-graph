@@ -1,8 +1,19 @@
+import System.Environment
+
 import MyArray
 import MyGraph
 
 smain :: String -> String
-main = interact smain
+
+main :: IO()
+main = do
+  args <- getArgs
+  case args of
+    [] -> interact smain
+    (file:_) -> do
+      s <- readFile file
+      print $ smain s
+
 
 smain input =
   let
