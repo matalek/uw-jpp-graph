@@ -25,15 +25,21 @@ instance Ix Char where
 instance Ix Int where
   range (beg, end) = [beg..end]
   index (beg, _) i = i - beg
+  rangeSize (beg, end) = end - beg + 1
 
 instance Ix Integer where
   range (beg, end) = [beg..end]
+  index (beg, _) i = fromInteger $ i - beg
+  rangeSize (beg, end) = fromInteger $ end - beg + 1
 
 instance (Ix a, Ix b) => Ix (a, b) where
   range ((begA, begB), (endA, endB)) =
-    zip (range (begA, endA)) (range (begB, endB))
-  
-data Array i e = Leaf (Maybe e) | Node (i, i) i (Array i e) (Array i e)
+    [(x, y) | x <- (range (begA, endA)), y <- (range (begB, endB))]
+
+  rangeSize ((begA, begB), (endA, endB)) =
+    (rangeSize (begA, endA)) * (rangeSize (begB, endB))
+                                                      
+data Array i e = Leaf (Maybe e) | Node (i, i) i (Array i e) (Array i e) deriving (Show)
 
 array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
 array (beg, end) = arrayAux (range (beg, end)) 
