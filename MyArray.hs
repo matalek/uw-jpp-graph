@@ -33,25 +33,53 @@ instance (Ix a, Ix b) => Ix (a, b) where
   range ((begA, begB), (endA, endB)) =
     zip (range (begA, endA)) (range (begB, endB))
   
-type Array i e = [(i, e)]
+data Array i e = Leaf (Maybe e) | Node (i, i) i (Array i e) (Array i e)
+
+array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
+array (beg, end) = arrayAux (range (beg, end)) 
+
+arrayAux :: (Ix i) => [i] -> [(i, e)] -> Array i e
+arrayAux [] _ = Leaf Nothing
+arrayAux r l 
+  | beg == end = createLeaf l
+  | otherwise =  Node (beg, end) mid left right
+  where
+    beg = head r
+    end = last r
+    createLeaf [] = Leaf Nothing
+    createLeaf ((_, el):_) = Leaf (Just el)
+    halfSize = (length r) ` div` 2 - 1 -- nie wiem, czy to ma sens
+    mid = r !! halfSize
+    left = arrayAux (filter (<=mid) r) $ filter (\ (ind, _) -> ind <= mid) l
+    right = arrayAux (filter (>mid) r) $ filter (\ (ind, _) -> ind > mid) l
 
 listArray :: (Ix i) => (i, i) -> [e] -> Array i e
-listArray (beg, end) = zip (range (beg, end))
+listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
 
 (!) :: (Ix i) => Array i e -> i -> e
-(!) arr ind = head [y | (x,y) <- arr, x == ind]
+(!) (Leaf (Just e)) _ = e
+(!) (Node _ mid left right) i
+  | i <= mid = (!) left i
+  | otherwise = (!) right i
 
 elems :: Ix i => Array i e -> [e]
-elems arr = [y | (x, y) <- arr]
+elems arr = elemsAux arr []
 
--- czy tylko część wybieramy?
-array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
-array (beg, end) l =
-  [(x, y) | (x, y) <- l, inRange (beg, end) x]
+elemsAux :: Ix i => Array i e -> [e] -> [e]
+elemsAux (Leaf (Just el)) acc = (el:acc)
+elemsAux (Leaf Nothing) acc = acc
+elemsAux (Node _ _ left right) acc =
+  elemsAux left newAcc
+  where
+    newAcc = elemsAux right acc
 
 update :: Ix i => i -> e -> Array i e -> Array i e
-update ind el arr =
-  (ind, el):[(x, y) | (x, y) <- arr, x /= ind]
+update _ el (Leaf _) = Leaf (Just el)
+update ind el (Node (beg, end) mid left right) =
+  Node (beg, end) mid newLeft newRight
+  where
+    newLeft = if ind <= mid then update ind el left else left
+    newRight = if ind > mid then update ind el right else right
 
 (//) :: (Ix i) => Array i e -> [(i, e)] -> Array i e
 (//) arr l = foldl (\ acc (ind, el) -> update ind el acc) arr l
