@@ -41,56 +41,68 @@ instance (Ix a, Ix b) => Ix (a, b) where
 
 -- Array type
 
-data Array i e = Leaf (Maybe e) | Node (i, i) i (Array i e) (Array i e) deriving (Show)
+type Array i e = ((i, i), ArrayAux e)
+
+data ArrayAux e = Leaf (Maybe e) | Node Int (ArrayAux e) (ArrayAux e)  deriving (Show)
 
 array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
-array (beg, end) = arrayAux (range (beg, end)) 
-
-arrayAux :: (Ix i) => [i] -> [(i, e)] -> Array i e
-arrayAux [] _ = Leaf Nothing
-arrayAux r l 
+array ran l = let
+  toInsert = map (\(ind, el) -> (index ran ind, el)) l
+  in
+    if rangeSize ran > 0 then
+      (ran, arrayAux (0, rangeSize ran - 1) toInsert) 
+    else
+      (ran, Leaf Nothing)
+      
+arrayAux :: (Int, Int) -> [(Int, e)] -> ArrayAux e
+arrayAux (beg, end) l
   | beg == end = createLeaf l
-  | otherwise =  Node (beg, end) mid left right
+  | otherwise =  Node mid left right
   where
-    beg = head r
-    end = last r
     createLeaf [] = Leaf Nothing
     createLeaf ((_, el):_) = Leaf (Just el)
-    halfSize = (length r) ` div` 2 - 1 -- nie wiem, czy to ma sens
-    mid = r !! halfSize
-    left = arrayAux (filter (<=mid) r) $ filter (\ (ind, _) -> ind <= mid) l
-    right = arrayAux (filter (>mid) r) $ filter (\ (ind, _) -> ind > mid) l
+    mid = beg + (end - beg + 1) ` div` 2 - 1
+    left = arrayAux (beg, mid) $ filter (\ (ind, _) -> ind <= mid) l
+    right = arrayAux (mid + 1, end) $ filter (\ (ind, _) -> ind > mid) l
 
 listArray :: (Ix i) => (i, i) -> [e] -> Array i e
 listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
 
 (!) :: (Ix i) => Array i e -> i -> e
-(!) (Leaf (Just e)) _ = e
-(!) (Leaf Nothing) _ = error "No value assigned"
-(!) (Node (beg, end) mid left right) ind
-  | not $ inRange (beg, end) ind = error "Index out of range"
-  | ind <= mid = (!) left ind
-  | otherwise = (!) right ind
+(!) ((beg, end), arr) ind
+  | inRange (beg, end) ind =  (!!!) arr (index (beg, end) ind)
+  | otherwise = error "Index out of range"
+    
+(!!!) :: ArrayAux e -> Int -> e
+(!!!) (Leaf (Just e)) _ = e
+(!!!) (Leaf Nothing) _ = error "No value assigned"
+(!!!) (Node mid left right) ind
+  | ind <= mid = (!!!) left ind
+  | otherwise = (!!!) right ind
 
 elems :: Ix i => Array i e -> [e]
-elems arr = elemsAux arr []
+elems (_, arr) = elemsAux arr []
 
-elemsAux :: Ix i => Array i e -> [e] -> [e]
-elemsAux (Leaf (Just el)) acc = (el:acc)
+elemsAux :: ArrayAux e -> [e] -> [e]
+elemsAux (Leaf (Just el)) acc = el:acc
 elemsAux (Leaf Nothing) acc = acc
-elemsAux (Node _ _ left right) acc =
+elemsAux (Node _ left right) acc =
   elemsAux left newAcc
   where
     newAcc = elemsAux right acc
 
 update :: Ix i => i -> e -> Array i e -> Array i e
-update _ el (Leaf _) = Leaf (Just el)
-update ind el n@(Node (beg, end) mid left right)
-  | not $ inRange (beg, end) ind = n
-  | otherwise = Node (beg, end) mid newLeft newRight
+update ind el old@(r@(beg, end), arr)
+  | inRange r ind = (r, updateAux (index (beg, end) ind) el arr) 
+  | otherwise = old
+    
+updateAux :: Int -> e -> ArrayAux e -> ArrayAux e
+updateAux _ el (Leaf _) = Leaf (Just el)
+updateAux ind el (Node mid left right) =
+  Node mid newLeft newRight
   where
-    newLeft = if ind <= mid then update ind el left else left
-    newRight = if ind > mid then update ind el right else right
+    newLeft = if ind <= mid then updateAux ind el left else left
+    newRight = if ind > mid then updateAux ind el right else right
 
 (//) :: (Ix i) => Array i e -> [(i, e)] -> Array i e
 (//) = foldl (\ acc (ind, el) -> update ind el acc)
