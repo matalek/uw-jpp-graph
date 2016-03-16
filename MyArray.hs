@@ -43,7 +43,7 @@ instance (Ix a, Ix b) => Ix (a, b) where
 
 type Array i e = ((i, i), ArrayAux e)
 
-data ArrayAux e = Leaf (Maybe e) | Node Int (ArrayAux e) (ArrayAux e)  deriving (Show)
+data ArrayAux e = Leaf (Maybe e) | Node Int (ArrayAux e) (ArrayAux e) | EmptyNode (Int, Int) deriving (Show)
 
 array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
 array ran l = let
@@ -55,6 +55,7 @@ array ran l = let
       (ran, Leaf Nothing)
       
 arrayAux :: (Int, Int) -> [(Int, e)] -> ArrayAux e
+arrayAux (beg, end) [] = EmptyNode (beg, end)
 arrayAux (beg, end) l
   | beg == end = createLeaf l
   | otherwise =  Node mid left right
@@ -76,6 +77,7 @@ listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
 (!!!) :: ArrayAux e -> Int -> e
 (!!!) (Leaf (Just e)) _ = e
 (!!!) (Leaf Nothing) _ = error "No value assigned"
+(!!!) (EmptyNode _) _ = error "No value assigned"
 (!!!) (Node mid left right) ind
   | ind <= mid = (!!!) left ind
   | otherwise = (!!!) right ind
@@ -86,6 +88,7 @@ elems (_, arr) = elemsAux arr []
 elemsAux :: ArrayAux e -> [e] -> [e]
 elemsAux (Leaf (Just el)) acc = el:acc
 elemsAux (Leaf Nothing) acc = acc
+elemsAux (EmptyNode _) acc = acc
 elemsAux (Node _ left right) acc =
   elemsAux left newAcc
   where
@@ -98,6 +101,17 @@ update ind el old@(r@(beg, end), arr)
     
 updateAux :: Int -> e -> ArrayAux e -> ArrayAux e
 updateAux _ el (Leaf _) = Leaf (Just el)
+updateAux ind el (EmptyNode (beg, end)) =
+  Node mid newLeft newRight
+  where
+    mid = beg + (end - beg + 1) ` div` 2 - 1
+    emptyLeft = EmptyNode (beg, mid)
+    emptyRight = EmptyNode (mid + 1, end)
+    newLeft = if ind <= mid then updateAux ind el emptyLeft
+              else emptyLeft
+    newRight = if ind > mid then updateAux ind el emptyRight
+               else emptyRight
+   
 updateAux ind el (Node mid left right) =
   Node mid newLeft newRight
   where
