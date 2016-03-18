@@ -1,17 +1,18 @@
 module MyGraph where
 import MyArray
+import Data.Set as Set
 
 type Graph = Array Int [Int]
 
 dfs :: Graph -> Int -> [Int]
-dfs g v = dfsAux g v []
+dfs g v = Set.elems $ dfsAux g v empty
 
-dfsAux :: Graph -> Int -> [Int] -> [Int]
+dfsAux :: Graph -> Int -> Set.Set Int -> Set.Set Int
 dfsAux g v vis = 
-  foldl visit (v:vis) $ g ! v
+  Prelude.foldl visit (insert v vis) $ g ! v
   where
-    visit l u =
-      if u `elem` l then
-        l
+    visit s u =
+      if member u s then
+        s
       else
-        dfsAux g u l
+        dfsAux g u s
