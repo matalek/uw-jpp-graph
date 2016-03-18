@@ -43,7 +43,7 @@ instance (Ix a, Ix b) => Ix (a, b) where
 
 type Array i e = ((i, i), ArrayAux e)
 
-data ArrayAux e = Leaf (Maybe e) | Node Int (ArrayAux e) (ArrayAux e) | EmptyNode deriving (Show)
+data ArrayAux e = Leaf e | Node Int (ArrayAux e) (ArrayAux e) | EmptyNode deriving (Show)
 
 array :: (Ix i) => (i, i) -> [(i, e)] -> Array i e
 array ran l = let
@@ -52,12 +52,12 @@ array ran l = let
     if rangeSize ran > 0 then
       (ran, arrayAux (0, rangeSize ran - 1) toInsert) 
     else
-      (ran, Leaf Nothing)
+      (ran, EmptyNode)
 
 arrayAux :: (Int, Int) -> [(Int, e)] -> ArrayAux e
 arrayAux _ [] = EmptyNode
 arrayAux (beg, end) l@((_, el):_)
-  | beg == end = Leaf (Just el)
+  | beg == end = Leaf  el
   | otherwise =  Node mid left right
   where
     mid = beg + (end - beg + 1) ` div` 2 - 1
@@ -73,8 +73,7 @@ listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
   | otherwise = error "Index out of range"
     
 (!!!) :: ArrayAux e -> Int -> e
-(!!!) (Leaf (Just e)) _ = e
-(!!!) (Leaf Nothing) _ = error "No value assigned"
+(!!!) (Leaf  e) _ = e
 (!!!) EmptyNode _ = error "No value assigned"
 (!!!) (Node mid left right) ind
   | ind <= mid = (!!!) left ind
@@ -84,8 +83,7 @@ elems :: Ix i => Array i e -> [e]
 elems (_, arr) = elemsAux arr []
 
 elemsAux :: ArrayAux e -> [e] -> [e]
-elemsAux (Leaf (Just el)) acc = el:acc
-elemsAux (Leaf Nothing) acc = acc
+elemsAux (Leaf el) acc = el:acc
 elemsAux EmptyNode acc = acc
 elemsAux (Node _ left right) acc =
   elemsAux left newAcc
@@ -98,10 +96,10 @@ update ind el old@(r@(beg, end), arr)
   | otherwise = old
     
 updateAux :: (Int, Int) -> Int -> e -> ArrayAux e -> ArrayAux e
-updateAux _ _ el (Leaf _) = Leaf (Just el)
+updateAux _ _ el (Leaf _) = Leaf  el
 updateAux (beg, end) ind el EmptyNode =
   if beg == end then
-    Leaf (Just el)
+    Leaf el
   else
     Node mid newLeft newRight
   where
