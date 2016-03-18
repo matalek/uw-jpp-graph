@@ -50,9 +50,19 @@ array ran l = let
   toInsert = map (\(ind, el) -> (index ran ind, el)) l
   in
     if rangeSize ran > 0 then
-      (ran, foldl (\ arr (ind, el) -> updateAux (0, rangeSize ran - 1) ind el arr) EmptyNode toInsert) 
+      (ran, arrayAux (0, rangeSize ran - 1) toInsert) 
     else
       (ran, Leaf Nothing)
+
+arrayAux :: (Int, Int) -> [(Int, e)] -> ArrayAux e
+arrayAux _ [] = EmptyNode
+arrayAux (beg, end) l@((_, el):_)
+  | beg == end = Leaf (Just el)
+  | otherwise =  Node mid left right
+  where
+    mid = beg + (end - beg + 1) ` div` 2 - 1
+    left = arrayAux (beg, mid) $ filter (\ (ind, _) -> ind <= mid) l
+    right = arrayAux (mid + 1, end) $ filter (\ (ind, _) -> ind > mid) l
 
 listArray :: (Ix i) => (i, i) -> [e] -> Array i e
 listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
