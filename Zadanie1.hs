@@ -1,6 +1,6 @@
 import System.Environment
+import System.Directory
 
-import MyArray
 import MyGraph
 
 smain :: String -> String
@@ -11,26 +11,33 @@ main = do
   case args of
     [] -> interact smain
     (file:_) -> do
-      s <- readFile file
-      print $ smain s
-
+      fileExists <- doesFileExist file
+      if fileExists then do
+         s <- readFile file
+         putStrLn $ smain s
+        else
+          putStrLn "File does not exist"
 
 smain input =
   let
-    ls = lines input
-    parseLine g l = parse g $ words l
-    listToInts = map (\ el -> read el :: Int)
-    parse g [] = g
-    parse g (v:neighbours) =
-      (read v :: Int ,listToInts neighbours):g
-    neighboursLists = foldl parseLine [] ls
+    neighboursLists = foldl parseLine [] $ lines input
     vertices = [x | (x,_) <- neighboursLists]
     beg = minimum vertices
     end = maximum vertices
-    graph = (array (beg, end) neighboursLists) :: Graph
-    vis = dfs graph 1
+    g = graph (beg, end) neighboursLists
+    vis = dfs g 1
   in
-    show vis
+    if vertices == [] then
+      "[]"
+    else
+      show vis
 
+parseLine :: [(Int,[Int])] -> String -> [(Int,[Int])]
+parseLine g l = parse g $ words l
 
-
+parse :: [(Int,[Int])] -> [String] -> [(Int,[Int])] 
+parse g [] = g
+parse g (v:neighbours) =
+  (read v :: Int ,listToInts neighbours):g
+  where
+    listToInts = map (\ el -> read el :: Int)
