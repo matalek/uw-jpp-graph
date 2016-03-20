@@ -22,12 +22,11 @@ smain input =
   let
     neighboursLists = foldl parseLine [] $ lines input
     vertices = [x | (x,_) <- neighboursLists]
-    beg = minimum vertices
     end = maximum vertices
-    g = graph (beg, end) neighboursLists
+    g = graph (0, end) neighboursLists
     vis = dfs g 1
   in
-    if vertices == [] then
+    if (null vertices) || (1 `notElem` vertices) then
       "[]"
     else
       show vis
