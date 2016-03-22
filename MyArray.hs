@@ -25,12 +25,12 @@ instance Ix Char where
 instance Ix Int where
   range (beg, end) = [beg..end]
   index (beg, _) i = i - beg
-  rangeSize (beg, end) = end - beg + 1
+  rangeSize (beg, end) = max 0 $ end - beg + 1
 
 instance Ix Integer where
   range (beg, end) = [beg..end]
   index (beg, _) i = fromInteger $ i - beg
-  rangeSize (beg, end) = fromInteger $ end - beg + 1
+  rangeSize (beg, end) = max 0 $ fromInteger $ end - beg + 1
 
 instance (Ix a, Ix b) => Ix (a, b) where
   range ((begA, begB), (endA, endB)) =
