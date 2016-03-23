@@ -27,9 +27,12 @@ smain input =
     else
       show vis
 
+-- Parses input line and adds it to the result of parsing
+-- previous lines
 parseLine :: [(Int,[Int])] -> String -> [(Int,[Int])]
 parseLine g l = parse g $ words l
 
+-- Auxiliary function for parsing array of words
 parse :: [(Int,[Int])] -> [String] -> [(Int,[Int])] 
 parse g [] = g
 parse g (v:neighbours) =

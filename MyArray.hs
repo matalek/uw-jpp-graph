@@ -66,6 +66,7 @@ array ran l = let
     else
       (ran, EmptyNode)
 
+-- Auxiliary recursive function for creating array
 arrayAux :: (Int, Int) -> [(Int, e)] -> ArrayAux e
 arrayAux _ [] = EmptyNode
 arrayAux (beg, end) l@((_, el):_)
@@ -83,7 +84,8 @@ listArray ran l = array ran $ zip (range ran) l
 (!) (ran, arr) ind
   | inRange ran ind =  (!!!) arr (index ran ind)
   | otherwise = error "Index out of range"
-    
+
+-- Auxiliary recursive function for finding element
 (!!!) :: ArrayAux e -> Int -> e
 (!!!) (Leaf  e) _ = e
 (!!!) EmptyNode _ = error "No value assigned"
@@ -94,6 +96,8 @@ listArray ran l = array ran $ zip (range ran) l
 elems :: Ix i => Array i e -> [e]
 elems (_, arr) = elemsAux arr []
 
+-- Auxiliary recursive function for creating list of elements.
+-- Uses accumulator to avoid lists concatenation/
 elemsAux :: ArrayAux e -> [e] -> [e]
 elemsAux (Leaf el) acc = el:acc
 elemsAux EmptyNode acc = acc
@@ -106,7 +110,8 @@ update :: Ix i => i -> e -> Array i e -> Array i e
 update ind el (r@(beg, end), arr)
   | inRange r ind = (r, updateAux (0, rangeSize r - 1) (index (beg, end) ind) el arr) 
   | otherwise = error "Index out of range"
-    
+
+-- Auxiliary recursive function for updating element
 updateAux :: (Int, Int) -> Int -> e -> ArrayAux e -> ArrayAux e
 updateAux _ _ el (Leaf _) = Leaf  el
 updateAux (beg, end) ind el EmptyNode =
@@ -116,16 +121,21 @@ updateAux (beg, end) ind el EmptyNode =
     Node mid newLeft newRight
   where
     mid = beg + (end - beg + 1) ` div` 2 - 1
-    newLeft = if ind <= mid then updateAux (beg, mid) ind el EmptyNode
+    newLeft = if ind <= mid
+              then updateAux (beg, mid) ind el EmptyNode
               else EmptyNode
-    newRight = if ind > mid then updateAux (mid+1, end) ind el EmptyNode
+    newRight = if ind > mid
+               then updateAux (mid + 1, end) ind el EmptyNode
                else EmptyNode
-   
 updateAux (beg, end) ind el (Node mid left right) =
   Node mid newLeft newRight
   where
-    newLeft = if ind <= mid then updateAux (beg, mid) ind el left else left
-    newRight = if ind > mid then updateAux (mid + 1, end) ind el right else right
+    newLeft = if ind <= mid
+              then updateAux (beg, mid) ind el left
+              else left
+    newRight = if ind > mid
+               then updateAux (mid + 1, end) ind el right
+               else right
 
 (//) :: (Ix i) => Array i e -> [(i, e)] -> Array i e
 (//) = foldl (\ acc (ind, el) -> update ind el acc)
