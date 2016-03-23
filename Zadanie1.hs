@@ -1,5 +1,4 @@
 import System.Environment
-import System.Directory
 
 import MyGraph
 
@@ -11,12 +10,8 @@ main = do
   case args of
     [] -> interact smain
     (file:_) -> do
-      fileExists <- doesFileExist file
-      if fileExists then do
-         s <- readFile file
-         putStrLn $ smain s
-        else
-          putStrLn "File does not exist"
+      s <- readFile file
+      putStrLn $ smain s
 
 smain input =
   let
@@ -38,6 +33,6 @@ parseLine g l = parse g $ words l
 parse :: [(Int,[Int])] -> [String] -> [(Int,[Int])] 
 parse g [] = g
 parse g (v:neighbours) =
-  (read v :: Int ,listToInts neighbours):g
+  (read v :: Int, listToInts neighbours):g
   where
     listToInts = map (\ el -> read el :: Int)

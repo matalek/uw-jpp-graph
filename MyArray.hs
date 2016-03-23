@@ -24,23 +24,43 @@ instance Ix Char where
 
 instance Ix Int where
   range (beg, end) = [beg..end]
-  index (beg, _) i = i - beg
+  
+  index r@(beg, _) i =
+    if inRange r i then
+       i - beg
+    else
+      error "Index out of range"
+      
   rangeSize (beg, end) = max 0 $ end - beg + 1
 
 instance Ix Integer where
   range (beg, end) = [beg..end]
-  index (beg, _) i = fromInteger $ i - beg
+  
+  index r@(beg, _) i =
+    if inRange r i then
+       fromInteger $ i - beg
+    else
+      error "Index out of range"
+      
   rangeSize (beg, end) = max 0 $ fromInteger $ end - beg + 1
 
 instance (Ix a, Ix b) => Ix (a, b) where
   range ((begA, begB), (endA, endB)) =
-    [(x, y) | x <- (range (begA, endA)), y <- (range (begB, endB))]
+    [(x, y) | x <- range (begA, endA), y <- range (begB, endB)]
+
+  index r@((begA, begB), (endA, endB)) (x, y) =
+    if inRange r (x, y) then
+      index r1 x * rangeSize r2 + index r2 y
+    else
+      error "Index out of range"
+    where
+      r1 = (begA, endA)
+      r2 = (begB, endB)
 
   rangeSize ((begA, begB), (endA, endB)) =
     rangeSize (begA, endA) * rangeSize (begB, endB)
 
 -- Array type
-
 type Array i e = ((i, i), ArrayAux e)
 
 data ArrayAux e = Leaf e | Node Int (ArrayAux e) (ArrayAux e) | EmptyNode deriving (Show)
