@@ -12,10 +12,8 @@ dfs g v = Set.elems $ dfsAux g v empty
 
 dfsAux :: Graph -> Int -> Set.Set Int -> Set.Set Int
 dfsAux g v vis =
-  Prelude.foldl visit (insert v vis) $ g ! v
+  Prelude.foldl visit (Set.insert v vis) $ g ! v
   where
-    visit s u =
-      if member u s then
-        s
-      else
-        dfsAux g u s
+    visit s u
+      | Set.member u s = s
+      | otherwise = dfsAux g u s
