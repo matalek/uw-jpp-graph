@@ -91,9 +91,9 @@ elemsAux (Node _ left right) acc =
     newAcc = elemsAux right acc
 
 update :: Ix i => i -> e -> Array i e -> Array i e
-update ind el old@(r@(beg, end), arr)
+update ind el (r@(beg, end), arr)
   | inRange r ind = (r, updateAux (0, rangeSize r - 1) (index (beg, end) ind) el arr) 
-  | otherwise = old
+  | otherwise = error "Index out of range"
     
 updateAux :: (Int, Int) -> Int -> e -> ArrayAux e -> ArrayAux e
 updateAux _ _ el (Leaf _) = Leaf  el
