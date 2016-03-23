@@ -46,6 +46,9 @@ instance (Ix a, Ix b) => Ix (a, b) where
       r1 = (begA, endA)
       r2 = (begB, endB)
 
+  inRange ((begA, begB), (endA, endB)) (x, y) =
+    inRange (begA, endA) x && inRange (begB, endB) y 
+
   rangeSize ((begA, begB), (endA, endB)) =
     rangeSize (begA, endA) * rangeSize (begB, endB)
 
@@ -74,11 +77,11 @@ arrayAux (beg, end) l@((_, el):_)
     right = arrayAux (mid + 1, end) $ filter (\ (ind, _) -> ind > mid) l
 
 listArray :: (Ix i) => (i, i) -> [e] -> Array i e
-listArray (beg, end) l = array (beg, end) $ zip (range (beg, end)) l
+listArray ran l = array ran $ zip (range ran) l
 
 (!) :: (Ix i) => Array i e -> i -> e
-(!) ((beg, end), arr) ind
-  | inRange (beg, end) ind =  (!!!) arr (index (beg, end) ind)
+(!) (ran, arr) ind
+  | inRange ran ind =  (!!!) arr (index ran ind)
   | otherwise = error "Index out of range"
     
 (!!!) :: ArrayAux e -> Int -> e
