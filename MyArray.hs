@@ -4,14 +4,9 @@ class Ord a => Ix a where
   range :: (a, a) -> [a]
   
   index :: (a, a) -> a -> Int
-  index (beg, end) i =
-    if inRange (beg, end) i then
-      head [ n | (x, n) <-
-            zip (range (beg, end)) [0..(rangeSize(beg, end))],
-            x == i  ]
-    else
-      error "Index out of range"
-      
+  index r i
+    | inRange r i =  length [x | x <- range r, x < i] 
+    | otherwise = error "Index out of range"
   
   inRange :: (a, a) -> a -> Bool
   inRange (beg, end) i = (i >= beg) && (i <= end)
@@ -25,22 +20,18 @@ instance Ix Char where
 instance Ix Int where
   range (beg, end) = [beg..end]
   
-  index r@(beg, _) i =
-    if inRange r i then
-       i - beg
-    else
-      error "Index out of range"
+  index r@(beg, _) i
+    | inRange r i = beg - i
+    | otherwise = error "Index out of range"
       
   rangeSize (beg, end) = max 0 $ end - beg + 1
 
 instance Ix Integer where
   range (beg, end) = [beg..end]
   
-  index r@(beg, _) i =
-    if inRange r i then
-       fromInteger $ i - beg
-    else
-      error "Index out of range"
+  index r@(beg, _) i
+    | inRange r i = fromInteger $ i - beg
+    | otherwise = error "Index out of range"
       
   rangeSize (beg, end) = max 0 $ fromInteger $ end - beg + 1
 
@@ -48,11 +39,9 @@ instance (Ix a, Ix b) => Ix (a, b) where
   range ((begA, begB), (endA, endB)) =
     [(x, y) | x <- range (begA, endA), y <- range (begB, endB)]
 
-  index r@((begA, begB), (endA, endB)) (x, y) =
-    if inRange r (x, y) then
-      index r1 x * rangeSize r2 + index r2 y
-    else
-      error "Index out of range"
+  index r@((begA, begB), (endA, endB)) (x, y)
+    | inRange r (x, y) = index r1 x * rangeSize r2 + index r2 y
+    | otherwise = error "Index out of range"
     where
       r1 = (begA, endA)
       r2 = (begB, endB)
