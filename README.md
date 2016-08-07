@@ -1,4 +1,4 @@
-#Latency measurement#
+#Graph traversal in Haskell#
 ## Project created as an assignment for *Programming Languages and Paradigms* course ##
 
 ### Task ###
